@@ -1,18 +1,4 @@
-// Mock data for the merchant dashboard
-
-export interface Claim {
-  id: string;
-  platform: string;
-  platformColor: string;
-  type: string;
-  amount: number;
-  status: 'recovered' | 'pending' | 'filed' | 'escalated' | 'rejected';
-  filedDate: string;
-  resolvedDate?: string;
-  description: string;
-  aiConfidence: number;
-  aiReasoning: string;
-}
+import { DetailedClaim, Insight } from './types';
 
 export interface PlatformConnection {
   id: string;
@@ -62,120 +48,127 @@ export const DASHBOARD_STATS: DashboardStats = {
   platformsConnected: 5,
 };
 
-export const CLAIMS: Claim[] = [
+export const DETAILED_CLAIMS: DetailedClaim[] = [
   {
     id: 'ST-2026-4821',
     platform: 'Amazon',
     platformColor: '#FF9900',
     type: 'Commission Overcharge',
-    amount: 2340,
-    status: 'filed',
-    filedDate: '2026-03-28',
-    description: 'SKU "Premium Silk Kurta" miscategorized as Apparel (17%) instead of Ethnic Wear (12%)',
+    amount: 5240,
+    status: 'recovered',
+    filedDate: '2026-03-25',
+    resolvedDate: '2026-03-28',
+    description: '14 SKUs miscategorized under "Electronics Accessories" (18%) instead of "Mobile Accessories" (9%)',
     aiConfidence: 94,
-    aiReasoning: 'Product has embroidery + ethnic patterns → should be Ethnic Wear category. Historical win rate: 81%.',
+    recoveryProbability: 98,
+    priority: 'high',
+    reasoning: {
+      whatWentWrong: 'Amazon applied the 18% generic electronics rate instead of the specific 9% mobile accessory tier.',
+      whyItsWrong: 'Products have "Mobile" in title and category backend tags clearly map to the 9% fee schedule.',
+      howMuchLost: 5240,
+    }
   },
   {
     id: 'ST-2026-4760',
-    platform: 'Amazon',
-    platformColor: '#FF9900',
-    type: 'Commission Correction',
-    amount: 5240,
-    status: 'recovered',
-    filedDate: '2026-03-16',
-    resolvedDate: '2026-03-28',
-    description: '14 SKUs miscategorized under "Electronics Accessories" (18%) instead of "Mobile Accessories" (9%)',
-    aiConfidence: 87,
-    aiReasoning: 'Systematic pattern detected across 14 SKUs. Fee schedule mismatch confirmed. Approved on first pass.',
+    platform: 'Razorpay',
+    platformColor: '#528FF0',
+    type: 'Duplicate Fee Deduction',
+    amount: 1450,
+    status: 'approved',
+    filedDate: '2026-03-29',
+    description: 'System identified 2 distinct platform fees charged for a single transaction ID ending in 9821.',
+    aiConfidence: 89,
+    recoveryProbability: 95,
+    priority: 'medium',
+    reasoning: {
+      whatWentWrong: 'Gateway deducted the standard 2% processing fee twice for one order payment.',
+      whyItsWrong: 'Transaction logs show only one successful API call from customer, but two internal gateway deductions.',
+      howMuchLost: 1450,
+    }
   },
   {
     id: 'FL-9982',
     platform: 'Flipkart',
     platformColor: '#F7E532',
-    type: 'Return Fraud',
+    type: 'Return Fraud (Weight Dispute)',
     amount: 3890,
-    status: 'recovered',
-    filedDate: '2026-03-06',
-    resolvedDate: '2026-03-28',
-    description: 'Customer returned wrong item (weight 380g vs original 1.2kg). Flipkart initially rejected claim.',
+    status: 'review',
+    filedDate: '2026-03-30',
+    description: 'Customer returned wrong item (weight 380g vs original 1.2kg). Flipkart initially rejected the claim.',
     aiConfidence: 92,
-    aiReasoning: 'Weight mismatch evidence conclusive. Re-filed with weight data after initial rejection. Escalated to Grievance Officer on Day 15.',
+    recoveryProbability: 75,
+    priority: 'high',
+    reasoning: {
+      whatWentWrong: 'Return center accepted a product weighing 380g, while the shipped box was documented at 1.2kg.',
+      whyItsWrong: 'Physical impossibility. The carrier scan at original dispatch explicitly verifies the 1.2kg weight.',
+      howMuchLost: 3890,
+    }
   },
   {
     id: 'CD-2026-0871',
     platform: 'Shiprocket',
     platformColor: '#8B5CF6',
-    type: 'Missing COD',
+    type: 'Missing COD Remittance',
     amount: 4100,
     status: 'filed',
-    filedDate: '2026-03-28',
-    description: '2 delivered orders confirmed via POD but COD not remitted',
+    filedDate: '2026-04-01',
+    description: '2 delivered orders confirmed via POD but COD amount not remitted to merchant account in T+3 window.',
     aiConfidence: 99,
-    aiReasoning: 'POD exists, weight scan matches, tracking confirmed. Evidence is conclusive — filed immediately.',
+    recoveryProbability: 99,
+    priority: 'critical',
+    reasoning: {
+      whatWentWrong: 'Carrier acknowledged COD collection via e-POD on Mar 27, but funds have not hit your settlement ledger.',
+      whyItsWrong: 'Violates standard T+3 settlement terms for collected cash on delivery orders.',
+      howMuchLost: 4100,
+    }
   },
   {
-    id: 'RZ-2026-1122',
-    platform: 'Razorpay',
-    platformColor: '#528FF0',
-    type: 'GST Overcharge',
-    amount: 1890,
-    status: 'escalated',
-    filedDate: '2026-03-20',
-    description: 'GST charged on payment gateway fee at 18% but merchant is in composition scheme (1%)',
-    aiConfidence: 88,
-    aiReasoning: 'GST registration details confirm composition scheme. Razorpay support ticket auto-created. Awaiting resolution.',
-  },
-  {
-    id: 'CF-2026-0445',
-    platform: 'Cashfree',
-    platformColor: '#00D09C',
-    type: 'Settlement Mismatch',
-    amount: 3200,
-    status: 'pending',
-    filedDate: '2026-03-25',
-    description: 'Settlement for 3 March orders not reflected in bank account after T+2 window',
-    aiConfidence: 76,
-    aiReasoning: 'Bank statement cross-referenced with Cashfree ledger. 3 transactions missing from settlement batch CF-2026-03-23.',
-  },
-  {
-    id: 'FL-2026-1055',
-    platform: 'Flipkart',
-    platformColor: '#F7E532',
-    type: 'Weight Dispute',
-    amount: 2780,
-    status: 'recovered',
-    filedDate: '2026-03-10',
-    resolvedDate: '2026-03-24',
-    description: 'Flipkart charged shipping for 2.5kg but actual product weight is 800g per warehouse records',
-    aiConfidence: 96,
-    aiReasoning: 'Warehouse weight log + product listing weight both show 800g. Overcharge: ₹2,780 across 8 shipments.',
-  },
-  {
-    id: 'AM-2026-0998',
+    id: 'AM-2026-0445',
     platform: 'Amazon',
     platformColor: '#FF9900',
-    type: 'FBA Fee Error',
-    amount: 6100,
-    status: 'recovered',
-    filedDate: '2026-03-01',
-    resolvedDate: '2026-03-18',
-    description: 'FBA fulfillment fee charged at "Standard" size tier but products qualify for "Small & Light"',
-    aiConfidence: 91,
-    aiReasoning: 'Product dimensions verified against Small & Light criteria. All 22 SKUs qualify. SAFE-T claim approved in 17 days.',
+    type: 'FBA Storage Overcharge',
+    amount: 8200,
+    status: 'detected',
+    filedDate: '2026-04-01',
+    description: 'Monthly FBA storage fees spiked by 24% despite average daily inventory remaining flat compared to last month.',
+    aiConfidence: 85,
+    recoveryProbability: 80,
+    priority: 'medium',
+    reasoning: {
+      whatWentWrong: 'Amazon applied oversized "Long Term Storage" fees prematurely to a batch of regular inventory.',
+      whyItsWrong: 'The inventory batch arrived only 45 days ago, well below the 180-day threshold for long-term penalties.',
+      howMuchLost: 8200,
+    }
+  }
+];
+
+export const INSIGHTS: Insight[] = [
+  {
+    id: 'ins-1',
+    title: 'Revenue Leakage Stopped',
+    description: 'You recovered ₹14,240 this month from miscalculated commission tiers on Amazon.',
+    type: 'recovery',
+    impact: 14240
   },
   {
-    id: 'RZ-2026-0887',
-    platform: 'Razorpay',
-    platformColor: '#528FF0',
-    type: 'Duplicate Charge',
-    amount: 1450,
-    status: 'rejected',
-    filedDate: '2026-03-15',
-    resolvedDate: '2026-03-22',
-    description: 'Suspected duplicate transaction fee on 2 refund operations',
-    aiConfidence: 52,
-    aiReasoning: 'Low confidence — the fee structure allows for refund processing charges. Razorpay confirmed charges are valid.',
+    id: 'ins-2',
+    title: 'Highest Leakage Source',
+    description: 'Most unresolved losses currently stem from FlipKart return fraud (Weight disputes).',
+    type: 'loss',
   },
+  {
+    id: 'ins-3',
+    title: 'Unusual Fee Spike',
+    description: 'Detected a 12% jump in Cashfree settlement delays late last week. Raised 3 tickets automatically.',
+    type: 'trend',
+  },
+  {
+    id: 'ins-4',
+    title: 'At Risk Deadlines',
+    description: '₹4,100 in missing COD claims will expire in 2 days. SettleGuard prioritized this.',
+    type: 'alert',
+    impact: 4100
+  }
 ];
 
 export const PLATFORMS: PlatformConnection[] = [
@@ -239,15 +232,4 @@ export const PLATFORMS: PlatformConnection[] = [
     issuesFound: 3,
     amountRecovered: 12800,
   },
-];
-
-export const RECOVERY_TIMELINE: RecoveryTimelineItem[] = [
-  { id: '1', date: 'Mar 28', amount: 5240, platform: 'Amazon', platformColor: '#FF9900', type: 'Commission Correction' },
-  { id: '2', date: 'Mar 28', amount: 3890, platform: 'Flipkart', platformColor: '#F7E532', type: 'Return Fraud' },
-  { id: '3', date: 'Mar 24', amount: 2780, platform: 'Flipkart', platformColor: '#F7E532', type: 'Weight Dispute' },
-  { id: '4', date: 'Mar 22', amount: 1200, platform: 'Razorpay', platformColor: '#528FF0', type: 'Fee Correction' },
-  { id: '5', date: 'Mar 18', amount: 6100, platform: 'Amazon', platformColor: '#FF9900', type: 'FBA Fee Error' },
-  { id: '6', date: 'Mar 15', amount: 3400, platform: 'Shiprocket', platformColor: '#8B5CF6', type: 'COD Recovery' },
-  { id: '7', date: 'Mar 12', amount: 4200, platform: 'Amazon', platformColor: '#FF9900', type: 'Commission' },
-  { id: '8', date: 'Mar 08', amount: 1800, platform: 'Cashfree', platformColor: '#00D09C', type: 'Settlement' },
 ];
